@@ -1,0 +1,47 @@
+task.name:'🔔 '+task.name,{body:task.note||fmt12(task.start),icon:'icons/icon-192.png'});}catch(e){}}
+}
+
+function playAlarmSound(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const notes=[523,659,784,659,523];
+    notes.forEach((freq,i)=>{
+      const o=ctx.createOscillator(),g=ctx.createGain();
+      o.connect(g);g.connect(ctx.destination);
+      o.frequency.value=freq;o.type='sine';
+      g.gain.setValueAtTime(0.3,ctx.currentTime+i*0.2);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+i*0.2+0.18);
+      o.start(ctx.currentTime+i*0.2);o.stop(ctx.currentTime+i*0.2+0.2);
+    });
+  }catch(e){}
+}
+
+function dismissAlarm(){document.getElementById('alarm-overlay').classList.remove('show');activeAlarm=null;}
+function snoozeAlarm(){
+  if(!activeAlarm)return;
+  dismissAlarm();
+  toast('😴 Snoozed 5 minutes!');
+  setTimeout(()=>{if(activeAlarm)triggerAlarm(activeAlarm,false);},5*60*1000);
+}
+
+function reqNotif(){
+  if(Notification)Notification.requestPermission().then(p=>{
+    toast(p==='granted'?'🔔 Notifications enabled!':'Notifications blocked.');
+    updateSettings();
+  });
+}
+
+function clearToday(){if(confirm('Clear today\'s progress?')){delete D.completed[todayKey()];save();render();toast('Today\'s progress cleared.');}}
+function resetAll(){if(confirm('Delete ALL data? This cannot be undone.')){localStorage.removeItem('routine2');location.reload();}}
+
+let toastTimer;
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+
+if(Notification&&Notification.permission==='default')Notification.requestPermission();
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+setInterval(checkAlarms,5000);
+checkAlarms();
+render();
+</script>
+</body>
+</html>
